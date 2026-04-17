@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ShiftFlow — シフト管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pri:#1a56db;--pri-l:#e8f0fe;--pri-d:#1240a8;
+  --bg:#f0f4f8;--sur:#fff;--sur2:#f8fafc;
+  --bd:#e2e8f0;--bd2:rgba(0,0,0,0.06);
+  --tx:#0f172a;--tx2:#475569;--tx3:#94a3b8;
+  --danger:#ef4444;--success:#10b981;--warn:#f59e0b;
+  --font:'Hiragino Sans','Yu Gothic UI','Meiryo UI',sans-serif;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--tx)}
+
+/* ========== SHARED LOGIN BG ========== */
+.auth-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#1e3a8a,#1d4ed8 55%,#0ea5e9);padding:1rem;
+}
+.lcard{
+  background:#fff;border-radius:20px;padding:2.5rem 2rem;
+  width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.22);
+}
+.llogo{text-align:center;margin-bottom:2rem}
+.lic{
+  width:56px;height:56px;background:var(--pri);border-radius:14px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:28px;margin-bottom:.7rem;
+}
+.llogo h1{font-size:23px;font-weight:800;letter-spacing:-0.5px;color:var(--tx)}
+.llogo p{font-size:12px;color:var(--tx3);margin-top:4px}
+.fg{margin-bottom:.9rem}
+.fg label{display:block;font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:5px}
+.fg input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--bd);border-radius:10px;
+  font-size:14px;font-family:var(--font);outline:none;background:#f8fafc;
+  transition:border-color .15s,box-shadow .15s;color:var(--tx);
+}
+.fg input:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+.primary-btn{
+  width:100%;padding:13px;background:var(--pri);color:#fff;border:none;border-radius:10px;
+  font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font);
+  margin-top:.3rem;transition:background .15s;
+}
+.primary-btn:hover{background:var(--pri-d)}
+.alert-box{
+  font-size:12px;padding:9px 13px;border-radius:8px;margin-bottom:.9rem;display:none;
+}
+.alert-err{background:#fef2f2;color:var(--danger);border:1px solid #fecaca}
+.alert-ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.back-link{
+  display:block;text-align:center;margin-top:1.1rem;font-size:13px;
+  color:var(--pri);cursor:pointer;text-decoration:none;font-weight:600;
+}
+.back-link:hover{text-decoration:underline}
+.pw-forgot{
+  display:block;text-align:center;margin-top:.75rem;font-size:12px;
+  color:var(--tx3);cursor:pointer;
+}
+.pw-forgot:hover{color:var(--pri);text-decoration:underline}
+.divider{
+  text-align:center;font-size:11px;color:var(--tx3);
+  margin:.8rem 0;position:relative;
+}
+.divider::before,.divider::after{
+  content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--bd);
+}
+.divider::before{left:0}.divider::after{right:0}
+
+/* ========== APP SHELL ========== */
+#app{display:none;flex-direction:column;min-height:100vh;background:var(--bg)}
+.hdr{
+  background:#fff;border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;padding:0 12px;height:52px;gap:8px;
+  position:sticky;top:0;z-index:100;
+}
+.hdr-logo{
+  font-size:15px;font-weight:800;color:var(--pri);letter-spacing:-0.5px;
+  display:flex;align-items:center;gap:5px;margin-right:4px;white-space:nowrap;
+}
+.vtabs{display:flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:3px;flex-shrink:0}
+.vtab{
+  padding:5px 11px;border:none;background:none;border-radius:6px;font-size:12px;
+  font-weight:700;cursor:pointer;color:var(--tx3);font-family:var(--font);
+  transition:all .15s;white-space:nowrap;
+}
+.vtab.on{background:#fff;color:var(--pri)}
+.hnav{display:flex;gap:4px;align-items:center;margin-left:auto}
+.narr{
+  width:30px;height:30px;border:1.5px solid var(--bd);background:#fff;border-radius:7px;
+  cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--font);transition:background .12s;
+}
+.narr:hover{background:var(--sur2)}
+.nlbl{font-size:13px;font-weight:700;color:var(--tx);min-width:110px;text-align:center;white-space:nowrap}
+.hact{display:flex;gap:6px;margin-left:6px}
+.ibtn{
+  width:32px;height:32px;border:1.5px solid var(--bd);background:#fff;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;
+  color:var(--tx2);transition:background .12s;
+}
+.ibtn:hover{background:var(--sur2)}
+.amain{flex:1;padding:10px;overflow:hidden}
+
+/* ========== SUMMARY BAR ========== */
+.sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.sc{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:.65rem .8rem;text-align:center}
+.sc .sv{font-size:20px;font-weight:800;color:var(--tx)}
+.sc .sl{font-size:10px;color:var(--tx3);margin-top:2px}
+.sc.red .sv{color:var(--danger)}
+
+/* ========== TIMELINE ========== */
+.tl-outer{background:#fff;border-radius:12px;border:1px solid var(--bd);overflow:hidden}
+.tl-thead{
+  display:flex;border-bottom:1px solid var(--bd);background:#f8fafc;
+  position:sticky;top:52px;z-index:50;
+}
+.tl-scol{
+  width:90px;min-width:90px;flex-shrink:0;border-right:1px solid var(--bd);
+  padding:8px 6px;font-size:10px;font-weight:700;color:var(--tx3);display:flex;align-items:center;
+}
+.tl-ruler-wrap{flex:1;overflow:hidden;height:32px;position:relative}
+.tl-ruler{position:absolute;inset:0}
+.rtick{
+  position:absolute;bottom:5px;font-size:10px;font-weight:700;color:var(--tx3);
+  transform:translateX(-50%);white-space:nowrap;
+}
+.rline{position:absolute;top:0;bottom:0;width:1px;background:var(--bd2)}
+.tl-scroll{overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 230px)}
+.tl-scroll::-webkit-scrollbar{height:5px;width:5px}
+.tl-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.tl-row{
+  display:flex;border-bottom:0.5px solid var(--bd2);
+  min-height:54px;align-items:stretch;
+}
+.tl-row:last-child{border-bottom:none}
+.tl-row:hover .tlane{background:#fafbff}
+.scell{
+  width:90px;min-width:90px;flex-shrink:0;border-right:1px solid var(--bd);
+  padding:6px 8px;display:flex;align-items:center;gap:6px;
+  background:#fff;position:sticky;left:0;z-index:10;
+}
+.savatar{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;
+}
+.sname{font-size:11px;font-weight:700;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlane{flex:1;position:relative;cursor:crosshair;min-height:54px;transition:background .1s}
+.hline{position:absolute;top:0;bottom:0;width:1px;background:var(--bd2);pointer-events:none;z-index:1}
+.sb{
+  position:absolute;top:6px;bottom:6px;border-radius:6px;cursor:pointer;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:center;padding:0 7px;
+  transition:filter .12s;z-index:5;min-width:6px;
+}
+.sb:hover{filter:brightness(.88)}
+.sb-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
+.sb-time{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85;line-height:1.3}
+
+/* ========== WEEK ========== */
+.wk-outer{background:#fff;border-radius:12px;border:1px solid var(--bd);overflow:hidden}
+.wk-thead{
+  display:flex;border-bottom:1px solid var(--bd);background:#f8fafc;
+  position:sticky;top:52px;z-index:50;
+}
+.wk-spacer{width:90px;min-width:90px;border-right:1px solid var(--bd)}
+.wk-days{flex:1;display:grid;grid-template-columns:repeat(7,1fr)}
+.wdcell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--bd2);font-size:11px;font-weight:700;color:var(--tx2)}
+.wdcell:last-child{border-right:none}
+.wdcell .wdn{font-size:17px;font-weight:800;display:block;color:var(--tx)}
+.wdcell.today-h .wdn{color:var(--pri)}
+.wdcell.sun .wdn,.wdcell.sun{color:var(--danger)}
+.wdcell.sat .wdn,.wdcell.sat{color:#0ea5e9}
+.wk-scroll{overflow:auto;max-height:calc(100vh - 230px)}
+.wk-scroll::-webkit-scrollbar{height:5px;width:5px}
+.wk-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.wk-row{display:flex;border-bottom:0.5px solid var(--bd2);min-height:48px}
+.wk-row:last-child{border-bottom:none}
+.wk-scell{
+  width:90px;min-width:90px;border-right:1px solid var(--bd);
+  padding:6px 8px;display:flex;align-items:center;gap:6px;
+  background:#fff;position:sticky;left:0;z-index:10;flex-shrink:0;
+}
+.wk-dcell{
+  flex:1;padding:3px;border-right:0.5px solid var(--bd2);
+  cursor:pointer;min-height:48px;transition:background .1s;
+}
+.wk-dcell:last-child{border-right:none}
+.wk-dcell:hover{background:var(--pri-l)}
+.wblk{
+  border-radius:5px;padding:3px 6px;font-size:10px;font-weight:700;
+  margin-bottom:2px;cursor:pointer;line-height:1.4;transition:filter .12s;
+}
+.wblk:hover{filter:brightness(.88)}
+
+/* ========== SHIFT MODAL ========== */
+.mbg{
+  background:rgba(0,0,0,.45);position:fixed;inset:0;z-index:200;
+  display:none;align-items:flex-end;justify-content:center;
+}
+.mbg.open{display:flex}
+.mbox{
+  background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;
+  padding:1.5rem 1.5rem 2rem;animation:slideUp .22s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhdl{width:38px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 1.1rem}
+.mtit{font-size:16px;font-weight:800;margin-bottom:1.1rem;color:var(--tx)}
+.mrow{display:flex;gap:10px;margin-bottom:.85rem;align-items:center}
+.mrow label{font-size:12px;font-weight:700;color:var(--tx2);width:60px;flex-shrink:0}
+.msel,.mtxt{
+  flex:1;padding:9px 11px;border:1.5px solid var(--bd);border-radius:8px;
+  font-size:13px;font-family:var(--font);outline:none;background:#fff;color:var(--tx);
+}
+.msel:focus,.mtxt:focus{border-color:var(--pri)}
+.tpair{display:flex;align-items:center;gap:5px;flex:1}
+.tpair span{font-size:13px;color:var(--tx2);flex-shrink:0}
+.tnum{
+  width:52px;padding:9px 6px;border:1.5px solid var(--bd);border-radius:8px;
+  font-size:13px;font-family:var(--font);text-align:center;outline:none;color:var(--tx);
+}
+.tnum:focus{border-color:var(--pri)}
+.cprow{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.cp{
+  width:26px;height:26px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;transition:transform .12s,border-color .12s;flex-shrink:0;
+}
+.cp:hover{transform:scale(1.15)}
+.cp.on{border-color:var(--tx)}
+.mfoot{display:flex;gap:8px;margin-top:.5rem}
+.mbtn-d{
+  padding:10px 14px;background:#fff;color:var(--danger);border:1.5px solid var(--danger);
+  border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);
+}
+.mbtn-c{
+  flex:1;padding:10px;background:#f1f5f9;border:none;border-radius:9px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);color:var(--tx2);
+}
+.mbtn-s{
+  flex:2;padding:10px;background:var(--pri);color:#fff;border:none;border-radius:9px;
+  font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);
+}
+.mbtn-s:hover{background:var(--pri-d)}
+
+/* ========== SETTINGS / STAFF / REQ ========== */
+.sg{display:grid;gap:8px}
+.stc{
+  background:#fff;border:1px solid var(--bd);border-radius:10px;
+  padding:.85rem 1rem;display:flex;align-items:center;gap:10px;
+}
+.stc-i{flex:1}
+.stc-n{font-size:14px;font-weight:700}
+.stc-m{font-size:11px;color:var(--tx3);margin-top:2px}
+.bdg{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+.bdg-f{background:#dbeafe;color:#1e40af}
+.bdg-p{background:#dcfce7;color:#166534}
+.bdg-a{background:#fef9c3;color:#92400e}
+.rcard{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:.85rem 1rem;margin-bottom:8px}
+.rhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.rn{font-size:13px;font-weight:700}
+.rd{font-size:12px;color:var(--tx2);line-height:1.6}
+.ract{display:flex;gap:8px;margin-top:8px}
+.ra{flex:1;padding:7px;background:var(--success);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.rr{flex:1;padding:7px;background:#fff;color:var(--danger);border:1.5px solid var(--danger);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.sbs{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+.sbs-p{background:#fef9c3;color:#92400e}
+.sbs-a{background:#dcfce7;color:#166534}
+.sbs-r{background:#fee2e2;color:#991b1b}
+
+/* ========== SETTINGS PANEL ========== */
+.set-s{background:#fff;border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.si{
+  padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:0.5px solid var(--bd2);font-size:13px;
+}
+.si:last-child{border-bottom:none}
+.si.clickable{cursor:pointer}
+.si.clickable:hover{background:var(--sur2)}
+.siv{color:var(--tx3);font-size:12px}
+.stit{font-size:12px;font-weight:700;color:var(--tx3);margin-bottom:6px;margin-top:12px}
+.stit:first-child{margin-top:0}
+.danger-btn{
+  width:100%;padding:12px;background:#fff;color:var(--danger);
+  border:1.5px solid var(--danger);border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:var(--font);margin-top:.5rem;
+}
+.danger-btn:hover{background:#fef2f2}
+
+/* ========== USER MANAGEMENT TABLE ========== */
+.tbl-wrap{background:#fff;border:1px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.tbl-hdr{
+  display:grid;background:#f8fafc;border-bottom:1px solid var(--bd);
+  padding:10px 12px;font-size:11px;font-weight:700;color:var(--tx3);
+}
+.tbl-row{
+  display:grid;padding:12px 12px;border-bottom:0.5px solid var(--bd2);
+  align-items:center;font-size:13px;
+}
+.tbl-row:last-child{border-bottom:none}
+.tbl-row:hover{background:#fafbff}
+.tbl-cols-user{grid-template-columns:1fr 1fr 80px 90px 70px}
+.role-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px}
+.role-admin{background:#ede9fe;color:#5b21b6}
+.role-staff{background:#dbeafe;color:#1e40af}
+.status-on{color:var(--success);font-weight:700;font-size:12px}
+.status-off{color:var(--tx3);font-size:12px}
+.act-btn{
+  padding:5px 10px;border-radius:7px;font-size:11px;font-weight:700;
+  cursor:pointer;font-family:var(--font);border:1.5px solid var(--bd);
+  background:#fff;color:var(--tx2);transition:all .12s;
+}
+.act-btn:hover{background:var(--sur2)}
+.act-btn.del{border-color:var(--danger);color:var(--danger)}
+.act-btn.del:hover{background:#fef2f2}
+.add-user-btn{
+  display:flex;align-items:center;gap:6px;padding:9px 16px;background:var(--pri);
+  color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;
+  cursor:pointer;font-family:var(--font);margin-bottom:12px;
+}
+.add-user-btn:hover{background:var(--pri-d)}
+
+/* ========== USER EDIT MODAL ========== */
+.overlay{
+  background:rgba(0,0,0,.45);position:fixed;inset:0;z-index:300;
+  display:none;align-items:center;justify-content:center;padding:1rem;
+}
+.overlay.open{display:flex}
+.dialog{
+  background:#fff;border-radius:16px;width:100%;max-width:420px;
+  padding:1.5rem;animation:fadeIn .2s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.dialog-title{font-size:16px;font-weight:800;margin-bottom:1.2rem;color:var(--tx)}
+.dialog-footer{display:flex;gap:8px;margin-top:1.2rem}
+.dlg-cancel{
+  flex:1;padding:10px;background:#f1f5f9;border:none;border-radius:9px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);color:var(--tx2);
+}
+.dlg-save{
+  flex:2;padding:10px;background:var(--pri);color:#fff;border:none;border-radius:9px;
+  font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);
+}
+.dlg-save:hover{background:var(--pri-d)}
+.fg2{margin-bottom:.85rem}
+.fg2 label{display:block;font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:5px}
+.fg2 input,.fg2 select{
+  width:100%;padding:10px 12px;border:1.5px solid var(--bd);border-radius:9px;
+  font-size:13px;font-family:var(--font);outline:none;background:#f8fafc;color:var(--tx);
+}
+.fg2 input:focus,.fg2 select:focus{border-color:var(--pri);background:#fff}
+.fg2 .hint{font-size:11px;color:var(--tx3);margin-top:4px}
+
+/* ========== TOAST ========== */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:#1e293b;color:#fff;font-size:13px;font-weight:700;
+  padding:10px 20px;border-radius:30px;z-index:9999;opacity:0;
+  transition:opacity .2s;pointer-events:none;white-space:nowrap;
+}
+.toast.show{opacity:1}
+
+@media(max-width:600px){
+  .vtab{padding:5px 7px;font-size:11px}
+  .tbl-cols-user{grid-template-columns:1fr 80px 60px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="screen-login" class="auth-screen">
+  <div class="lcard">
+    <div class="llogo">
+      <div class="lic">📅</div>
+      <h1>ShiftFlow</h1>
+      <p>スマートシフト管理システム</p>
+    </div>
+    <div id="login-err" class="alert-box alert-err">メールアドレスまたはパスワードが正しくありません。</div>
+    <div class="fg">
+      <label>メールアドレス</label>
+      <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="fg">
+      <label>パスワード</label>
+      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="primary-btn" id="login-btn">ログイン</button>
+    <a class="pw-forgot" id="goto-forgot">パスワードを忘れた方はこちら</a>
+  </div>
+</div>
+
+<!-- ========== FORGOT PASSWORD SCREEN ========== -->
+<div id="screen-forgot" class="auth-screen" style="display:none">
+  <div class="lcard">
+    <div class="llogo">
+      <div class="lic">🔑</div>
+      <h1>パスワードのリセット</h1>
+      <p>登録メールアドレスを入力してください</p>
+    </div>
+    <div id="forgot-err" class="alert-box alert-err">登録されていないメールアドレスです。</div>
+    <div id="forgot-ok" class="alert-box alert-ok">確認コードを送信しました。（デモ: コードは <b id="demo-code"></b> です）</div>
+    <div id="forgot-step1">
+      <div class="fg">
+        <label>メールアドレス</label>
+        <input type="email" id="forgot-email" placeholder="your@email.com">
+      </div>
+      <button class="primary-btn" id="forgot-send-btn">確認コードを送信</button>
+    </div>
+    <div id="forgot-step2" style="display:none">
+      <div class="fg">
+        <label>確認コード（6桁）</label>
+        <input type="text" id="forgot-code-input" placeholder="123456" maxlength="6" style="letter-spacing:4px;font-size:18px;text-align:center">
+      </div>
+      <div class="fg">
+        <label>新しいパスワード</label>
+        <input type="password" id="forgot-newpass" placeholder="8文字以上">
+      </div>
+      <div class="fg">
+        <label>新しいパスワード（確認）</label>
+        <input type="password" id="forgot-newpass2" placeholder="もう一度入力">
+      </div>
+      <div id="forgot-step2-err" class="alert-box alert-err"></div>
+      <button class="primary-btn" id="forgot-reset-btn">パスワードを変更する</button>
+    </div>
+    <a class="back-link" id="goto-login">← ログイン画面に戻る</a>
+  </div>
+</div>
+
+<!-- ========== CHANGE PASSWORD SCREEN (from settings) ========== -->
+<div id="screen-chpw" class="auth-screen" style="display:none">
+  <div class="lcard">
+    <div class="llogo">
+      <div class="lic">🔒</div>
+      <h1>パスワード変更</h1>
+      <p>現在のパスワードを確認後、変更できます</p>
+    </div>
+    <div id="chpw-err" class="alert-box alert-err"></div>
+    <div id="chpw-ok" class="alert-box alert-ok">パスワードを変更しました。</div>
+    <div class="fg">
+      <label>現在のパスワード</label>
+      <input type="password" id="chpw-cur" placeholder="現在のパスワード">
+    </div>
+    <div class="fg">
+      <label>新しいパスワード</label>
+      <input type="password" id="chpw-new" placeholder="8文字以上">
+    </div>
+    <div class="fg">
+      <label>新しいパスワード（確認）</label>
+      <input type="password" id="chpw-new2" placeholder="もう一度入力">
+    </div>
+    <button class="primary-btn" id="chpw-btn">パスワードを変更する</button>
+    <a class="back-link" id="chpw-back">← 設定画面に戻る</a>
+  </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="app">
+  <div class="hdr">
+    <div class="hdr-logo">📅 ShiftFlow</div>
+    <div class="vtabs">
+      <button class="vtab on" data-tab="day">日</button>
+      <button class="vtab" data-tab="week">週</button>
+      <button class="vtab" data-tab="staff">スタッフ</button>
+      <button class="vtab" data-tab="req">申請</button>
+      <button class="vtab" data-tab="users">ユーザー管理</button>
+      <button class="vtab" data-tab="set">設定</button>
+    </div>
+    <div class="hnav" id="hnav">
+      <button class="narr" id="np">‹</button>
+      <div class="nlbl" id="nlbl"></div>
+      <button class="narr" id="nn">›</button>
+    </div>
+    <div class="hact">
+      <button class="ibtn" id="tbtn" title="今日">●</button>
+      <button class="ibtn" id="abtn" title="シフト追加">＋</button>
+    </div>
+  </div>
+
+  <div class="amain">
+    <!-- Day Timeline -->
+    <div id="tab-day">
+      <div class="sbar" id="sb1"></div>
+      <div class="tl-outer" id="tl-outer"></div>
+    </div>
+    <!-- Week -->
+    <div id="tab-week" style="display:none">
+      <div class="sbar" id="sb2"></div>
+      <div class="wk-outer" id="wk-outer"></div>
+    </div>
+    <!-- Staff -->
+    <div id="tab-staff" style="display:none">
+      <div class="sg" id="stlist"></div>
+    </div>
+    <!-- Requests -->
+    <div id="tab-req" style="display:none">
+      <div id="reqlist"></div>
+    </div>
+    <!-- User Management -->
+    <div id="tab-users" style="display:none">
+      <div id="users-panel"></div>
+    </div>
+    <!-- Settings -->
+    <div id="tab-set" style="display:none">
+      <div class="stit">アカウント</div>
+      <div class="set-s">
+        <div class="si"><span>ログイン中</span><span class="siv" id="su-email"></span></div>
+        <div class="si"><span>氏名</span><span class="siv" id="su-name"></span></div>
+        <div class="si"><span>役割</span><span class="siv" id="su-role"></span></div>
+      </div>
+      <div class="stit">セキュリティ</div>
+      <div class="set-s">
+        <div class="si clickable" id="goto-chpw-btn">
+          <span>パスワード変更</span><span class="siv">›</span>
+        </div>
+      </div>
+      <div class="stit">事業所設定</div>
+      <div class="set-s">
+        <div class="si"><span>事業所名</span><span class="siv">大阪本店</span></div>
+        <div class="si"><span>表示時間帯</span><span class="siv">09:00 〜 18:00</span></div>
+        <div class="si"><span>必要人員/日</span><span class="siv">3名</span></div>
+      </div>
+      <button class="danger-btn" id="lout">ログアウト</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SHIFT MODAL ========== -->
+<div class="mbg" id="shift-modal">
+  <div class="mbox">
+    <div class="mhdl"></div>
+    <div class="mtit" id="mtit">シフトを追加</div>
+    <div class="mrow"><label>スタッフ</label><select id="m-st" class="msel"></select></div>
+    <div class="mrow"><label>日付</label><input type="date" id="m-dt" class="mtxt"></div>
+    <div class="mrow"><label>開始</label>
+      <div class="tpair">
+        <input type="number" id="m-sh" class="tnum" min="0" max="23" value="9"><span>時</span>
+        <input type="number" id="m-sm" class="tnum" min="0" max="59" value="0"><span>分</span>
+      </div>
+    </div>
+    <div class="mrow"><label>終了</label>
+      <div class="tpair">
+        <input type="number" id="m-eh" class="tnum" min="0" max="23" value="18"><span>時</span>
+        <input type="number" id="m-em" class="tnum" min="0" max="59" value="0"><span>分</span>
+      </div>
+    </div>
+    <div class="mrow"><label>メモ</label><input type="text" id="m-nt" class="mtxt" placeholder="業務内容など"></div>
+    <div class="mrow"><label>カラー</label><div class="cprow" id="cprow"></div></div>
+    <div class="mfoot">
+      <button class="mbtn-d" id="m-del" style="display:none">削除</button>
+      <button class="mbtn-c" id="m-cl">キャンセル</button>
+      <button class="mbtn-s" id="m-sv">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== USER EDIT DIALOG ========== -->
+<div class="overlay" id="user-dialog">
+  <div class="dialog">
+    <div class="dialog-title" id="ud-title">ユーザーを追加</div>
+    <div class="fg2">
+      <label>氏名</label>
+      <input type="text" id="ud-name" placeholder="田中 花子">
+    </div>
+    <div class="fg2">
+      <label>メールアドレス</label>
+      <input type="email" id="ud-email" placeholder="hanako@example.com">
+    </div>
+    <div class="fg2" id="ud-pw-wrap">
+      <label>パスワード</label>
+      <input type="password" id="ud-pass" placeholder="8文字以上">
+      <div class="hint" id="ud-pw-hint"></div>
+    </div>
+    <div class="fg2">
+      <label>役割</label>
+      <select id="ud-role">
+        <option value="admin">管理者</option>
+        <option value="staff" selected>スタッフ</option>
+        <option value="viewer">閲覧のみ</option>
+      </select>
+    </div>
+    <div class="fg2">
+      <label>ステータス</label>
+      <select id="ud-status">
+        <option value="active">有効</option>
+        <option value="inactive">無効</option>
+      </select>
+    </div>
+    <div id="ud-err" class="alert-box alert-err"></div>
+    <div class="dialog-footer">
+      <button class="dlg-cancel" id="ud-cancel">キャンセル</button>
+      <button class="dlg-save" id="ud-save">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   DATA STORE
+============================================================ */
+function loadUsers() {
+  try {
+    const d = localStorage.getItem('sf_users');
+    if (d) return JSON.parse(d);
+  } catch(e){}
+  return [
+    { id:1, name:'湯浅 管理者', email:'admin@example.com', password:'shift2024', role:'admin', status:'active', createdAt:'2025-01-01' },
+    { id:2, name:'田中 花子',   email:'tanaka@example.com', password:'staff123',  role:'staff', status:'active', createdAt:'2025-01-01' },
+    { id:3, name:'佐藤 一郎',   email:'sato@example.com',   password:'staff123',  role:'staff', status:'active', createdAt:'2025-01-05' },
+    { id:4, name:'鈴木 次郎',   email:'suzuki@example.com', password:'staff123',  role:'staff', status:'active', createdAt:'2025-01-05' },
+    { id:5, name:'山田 美咲',   email:'yamada@example.com', password:'staff123',  role:'staff', status:'active', createdAt:'2025-01-06' },
+    { id:6, name:'中村 翔',     email:'nakamura@example.com',password:'staff123', role:'staff', status:'active', createdAt:'2025-01-06' },
+    { id:7, name:'小林 あい',   email:'kobayashi@example.com',password:'part123', role:'staff', status:'active', createdAt:'2025-01-10' },
+    { id:8, name:'加藤 健',     email:'kato@example.com',   password:'part123',  role:'staff', status:'active', createdAt:'2025-01-10' },
+    { id:9, name:'伊藤 涼子',   email:'ito@example.com',    password:'part123',  role:'staff', status:'inactive',createdAt:'2025-01-12' },
+    { id:10,name:'渡辺 拓',     email:'watanabe@example.com',password:'part123', role:'viewer',status:'active', createdAt:'2025-01-12' },
+  ];
+}
+function saveUsers(u){ try{localStorage.setItem('sf_users',JSON.stringify(u));}catch(e){} }
+
+const STAFF_COLORS = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444',
+                      '#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+const PALETTE = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444',
+                 '#ec4899','#06b6d4','#84cc16','#f97316','#6366f1','#14b8a6','#a855f7'];
+const REQS = [
+  {id:1,staff:'中村 翔',  type:'休暇申請', date:'2025-01-10',reason:'私用のため',status:'pending'},
+  {id:2,staff:'小林 あい',type:'シフト変更',date:'2025-01-15',reason:'学校試験',  status:'pending'},
+  {id:3,staff:'田中 花子',type:'有給申請', date:'2025-01-20',reason:'旅行',       status:'approved'},
+  {id:4,staff:'加藤 健',  type:'休暇申請', date:'2025-01-08',reason:'体調不良',   status:'rejected'},
+];
+
+const SH=9, EH=18, SPAN=(EH-SH)*60;
+let tab='day', curDate=new Date(), shifts=[], editing=null, selColor='#3b82f6';
+let currentUser=null, users=[], editingUserId=null, resetCode='', resetEmail='';
+
+/* ---- utils ---- */
+const pad = n => String(n).padStart(2,'0');
+const fmtDkey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const dispD = d => {
+  const dn='日月火水木金土'.split('');
+  return `${d.getMonth()+1}月${d.getDate()}日（${dn[d.getDay()]}）`;
+};
+const hex2rgb = (h,a) => {
+  const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+};
+function getMon(d){ const c=new Date(d),dy=c.getDay(); c.setDate(c.getDate()-(dy===0?6:dy-1)); return c; }
+function fmtWeek(d){ const m=getMon(d),e=new Date(m); e.setDate(m.getDate()+6); return `${m.getMonth()+1}/${m.getDate()} — ${e.getMonth()+1}/${e.getDate()}`; }
+function pct(h,m){ return Math.max(0,Math.min(100,((h-SH)*60+m)/SPAN*100)); }
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+/* ---- screen switch ---- */
+function showScreen(id){
+  ['screen-login','screen-forgot','screen-chpw','app'].forEach(s=>{
+    const el=document.getElementById(s);
+    if(el) el.style.display = s===id ? (s==='app'?'flex':'flex') : 'none';
+  });
+}
+
+/* ---- localStorage shifts ---- */
+function saveShifts(){ try{localStorage.setItem('sf_shifts',JSON.stringify(shifts));}catch(e){} }
+function loadShifts(){
+  try{ const d=localStorage.getItem('sf_shifts'); if(d) return JSON.parse(d); }catch(e){}
+  return null;
+}
+
+function getStaffList(){
+  return users.filter(u=>u.status==='active').map((u,i)=>({
+    id: u.id,
+    name: u.name,
+    short: u.name.split(' ')[0] || u.name.slice(0,3),
+    initials: u.name.charAt(0),
+    color: STAFF_COLORS[i % STAFF_COLORS.length],
+    type: u.role==='admin'?'full':'part'
+  }));
+}
+
+function initShifts(){
+  const saved = loadShifts();
+  if(saved && saved.length>0){ shifts=saved; return; }
+  shifts=[];
+  const staffList = getStaffList();
+  const plans=[
+    {sh:9,sm:0,eh:17,em:30},{sh:8,sm:0,eh:16,em:0},{sh:10,sm:30,eh:18,em:0},
+    {sh:9,sm:0,eh:18,em:0},{sh:8,sm:30,eh:17,em:0},{sh:11,sm:0,eh:18,em:0},
+    {sh:9,sm:15,eh:17,em:45}
+  ];
+  const mon=getMon(new Date());
+  for(let w=-1;w<3;w++){
+    for(let di=0;di<5;di++){
+      const d=new Date(mon); d.setDate(mon.getDate()+w*7+di);
+      const dk=fmtDkey(d);
+      staffList.forEach((s,si)=>{
+        if(s.type==='part'&&(di===1||di===3))return;
+        const p=plans[(si+di)%plans.length];
+        shifts.push({id:Date.now()+Math.random(),staffId:s.id,date:dk,
+          sh:p.sh,sm:p.sm,eh:p.eh,em:p.em,note:'',color:s.color});
+      });
+    }
+  }
+  saveShifts();
+}
+
+/* ============================================================
+   TIMELINE (DAY)
+============================================================ */
+function renderDay(){
+  const dk=fmtDkey(curDate);
+  const ds=shifts.filter(s=>s.date===dk);
+  const staffList=getStaffList();
+  document.getElementById('sb1').innerHTML=`
+    <div class="sc"><div class="sv">${ds.length}</div><div class="sl">本日シフト</div></div>
+    <div class="sc ${ds.length<3?'red':''}"><div class="sv">${ds.length<3?'不足':'充足'}</div><div class="sl">人員状況</div></div>
+    <div class="sc"><div class="sv">${staffList.length}</div><div class="sl">スタッフ数</div></div>
+    <div class="sc"><div class="sv">${REQS.filter(r=>r.status==='pending').length}</div><div class="sl">申請待ち</div></div>`;
+
+  let ruler='';
+  for(let h=SH;h<=EH;h++){
+    const p=((h-SH)/(EH-SH))*100;
+    ruler+=`<div class="rtick" style="left:${p}%">${pad(h)}:00</div>`;
+    ruler+=`<div class="rline" style="left:${p}%"></div>`;
+  }
+  let rows='';
+  staffList.forEach(s=>{
+    const ss=ds.filter(x=>x.staffId===s.id);
+    let blocks='', hlines='';
+    for(let h=SH;h<=EH;h++){
+      const p=((h-SH)/(EH-SH))*100;
+      hlines+=`<div class="hline" style="left:${p}%"></div>`;
+    }
+    ss.forEach(sh=>{
+      const l=pct(sh.sh,sh.sm), w=Math.max(pct(sh.eh,sh.em)-l,0.5);
+      const bg=hex2rgb(sh.color,0.18);
+      const time=`${pad(sh.sh)}:${pad(sh.sm)}〜${pad(sh.eh)}:${pad(sh.em)}`;
+      blocks+=`<div class="sb" style="left:${l}%;width:${w}%;background:${bg};border-left:3px solid ${sh.color}" data-id="${sh.id}">
+        <div class="sb-name" style="color:${sh.color}">${s.short}</div>
+        <div class="sb-time" style="color:${sh.color}">${time}</div>
+      </div>`;
+    });
+    rows+=`<div class="tl-row">
+      <div class="scell">
+        <div class="savatar" style="background:${s.color}22;color:${s.color}">${s.initials}</div>
+        <div class="sname">${s.short}</div>
+      </div>
+      <div class="tlane" data-sid="${s.id}" data-dk="${dk}">${hlines}${blocks}</div>
+    </div>`;
+  });
+  document.getElementById('tl-outer').innerHTML=`
+    <div class="tl-thead">
+      <div class="tl-scol">スタッフ</div>
+      <div class="tl-ruler-wrap"><div class="tl-ruler">${ruler}</div></div>
+    </div>
+    <div class="tl-scroll"><div>${rows}</div></div>`;
+
+  document.querySelectorAll('.tlane').forEach(lane=>{
+    lane.addEventListener('click',e=>{
+      if(e.target.closest('.sb'))return;
+      const rect=lane.getBoundingClientRect();
+      const frac=(e.clientX-rect.left)/rect.width;
+      const m=Math.round(frac*SPAN);
+      openShiftModal(null,parseInt(lane.dataset.sid),lane.dataset.dk,Math.floor(m/60)+SH,m%60);
+    });
+  });
+  document.querySelectorAll('.sb').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const sh=shifts.find(x=>String(x.id)===el.dataset.id);
+      if(sh) openShiftModal(sh);
+    });
+  });
+}
+
+/* ============================================================
+   WEEK VIEW
+============================================================ */
+function renderWeek(){
+  const mon=getMon(curDate);
+  const days=Array.from({length:7},(_,i)=>{ const d=new Date(mon); d.setDate(mon.getDate()+i); return d; });
+  const today=new Date();
+  const dn='日月火水木金土'.split('');
+  const staffList=getStaffList();
+  const wShifts=shifts.filter(s=>days.some(d=>fmtDkey(d)===s.date));
+  const sc=days.filter(d=>shifts.filter(s=>s.date===fmtDkey(d)).length<3).length;
+  document.getElementById('sb2').innerHTML=`
+    <div class="sc"><div class="sv">${wShifts.length}</div><div class="sl">週間シフト</div></div>
+    <div class="sc ${sc>0?'red':''}"><div class="sv">${sc}</div><div class="sl">人員不足日</div></div>
+    <div class="sc"><div class="sv">${staffList.length}</div><div class="sl">スタッフ数</div></div>
+    <div class="sc"><div class="sv">${REQS.filter(r=>r.status==='pending').length}</div><div class="sl">申請待ち</div></div>`;
+  const dayHdrs=days.map((d,i)=>{
+    const cls=i===0?'sun':i===6?'sat':'';
+    const isToday=fmtDkey(d)===fmtDkey(today);
+    return `<div class="wdcell ${cls}${isToday?' today-h':''}"><span class="wdn">${d.getDate()}</span>${dn[d.getDay()]}</div>`;
+  }).join('');
+  let rows='';
+  staffList.forEach(s=>{
+    const cells=days.map(d=>{
+      const dk=fmtDkey(d);
+      const ss=shifts.filter(x=>x.staffId===s.id&&x.date===dk);
+      const blks=ss.map(sh=>`<div class="wblk" style="background:${hex2rgb(sh.color,0.18)};color:${sh.color};border-left:2px solid ${sh.color}" data-id="${sh.id}">
+        ${pad(sh.sh)}:${pad(sh.sm)}-${pad(sh.eh)}:${pad(sh.em)}
+      </div>`).join('');
+      return `<div class="wk-dcell" data-sid="${s.id}" data-dk="${dk}">${blks}</div>`;
+    }).join('');
+    rows+=`<div class="wk-row">
+      <div class="wk-scell">
+        <div class="savatar" style="background:${s.color}22;color:${s.color}">${s.initials}</div>
+        <div class="sname">${s.short}</div>
+      </div>${cells}
+    </div>`;
+  });
+  document.getElementById('wk-outer').innerHTML=`
+    <div class="wk-thead"><div class="wk-spacer"></div><div class="wk-days">${dayHdrs}</div></div>
+    <div class="wk-scroll"><div>${rows}</div></div>`;
+  document.querySelectorAll('.wk-dcell').forEach(c=>{
+    c.addEventListener('click',e=>{
+      if(e.target.closest('.wblk'))return;
+      openShiftModal(null,parseInt(c.dataset.sid),c.dataset.dk,9,0);
+    });
+  });
+  document.querySelectorAll('.wblk').forEach(el=>{
+    el.addEventListener('click',e=>{
+      e.stopPropagation();
+      const sh=shifts.find(x=>String(x.id)===el.dataset.id);
+      if(sh) openShiftModal(sh);
+    });
+  });
+}
+
+/* ============================================================
+   STAFF
+============================================================ */
+function renderStaff(){
+  const staffList=getStaffList();
+  document.getElementById('stlist').innerHTML=staffList.map(s=>{
+    const cnt=shifts.filter(x=>x.staffId===s.id).length;
+    const mins=shifts.filter(x=>x.staffId===s.id).reduce((a,x)=>a+(x.eh*60+x.em)-(x.sh*60+x.sm),0);
+    const h=Math.floor(mins/60), m=mins%60;
+    const u=users.find(x=>x.id===s.id);
+    return `<div class="stc">
+      <div class="savatar" style="width:38px;height:38px;font-size:14px;border-radius:50%;background:${s.color}22;color:${s.color};display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">${s.initials}</div>
+      <div class="stc-i">
+        <div class="stc-n">${s.name}</div>
+        <div class="stc-m">${u?u.email:''} ／ シフト${cnt}件 ／ 合計${h}時間${m?m+'分':''}</div>
+      </div>
+      <span class="bdg ${s.type==='full'?'bdg-f':'bdg-p'}">${s.type==='full'?'正社員':'アルバイト'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ============================================================
+   REQUESTS
+============================================================ */
+function renderReq(){
+  const lbl={pending:'承認待ち',approved:'承認済',rejected:'却下'};
+  document.getElementById('reqlist').innerHTML=REQS.map(r=>`
+    <div class="rcard">
+      <div class="rhdr"><span class="rn">${r.staff} — ${r.type}</span><span class="sbs sbs-${r.status[0]}">${lbl[r.status]}</span></div>
+      <div class="rd">📅 ${r.date}　📝 ${r.reason}</div>
+      ${r.status==='pending'?`<div class="ract">
+        <button class="ra" onclick="apR(${r.id})">✓ 承認</button>
+        <button class="rr" onclick="rjR(${r.id})">✕ 却下</button>
+      </div>`:''}
+    </div>`).join('');
+}
+window.apR=id=>{REQS.find(r=>r.id===id).status='approved';renderReq();showToast('申請を承認しました');}
+window.rjR=id=>{REQS.find(r=>r.id===id).status='rejected';renderReq();showToast('申請を却下しました');}
+
+/* ============================================================
+   USER MANAGEMENT
+============================================================ */
+function renderUsers(){
+  const roleLabel={admin:'管理者',staff:'スタッフ',viewer:'閲覧のみ'};
+  const roleCls={admin:'role-admin',staff:'role-staff',viewer:'bdg-p'};
+  const rows=users.map(u=>`
+    <div class="tbl-row tbl-cols-user">
+      <div>
+        <div style="font-weight:700;font-size:13px">${u.name}</div>
+        <div style="font-size:11px;color:var(--tx3)">${u.email}</div>
+      </div>
+      <div><span class="role-badge ${roleCls[u.role]||'role-staff'}">${roleLabel[u.role]||u.role}</span></div>
+      <div class="${u.status==='active'?'status-on':'status-off'}">${u.status==='active'?'● 有効':'○ 無効'}</div>
+      <div style="font-size:11px;color:var(--tx3)">${u.createdAt}</div>
+      <div style="display:flex;gap:5px">
+        <button class="act-btn" onclick="openUserEdit(${u.id})">編集</button>
+        ${u.id!==currentUser.id?`<button class="act-btn del" onclick="deleteUser(${u.id})">削除</button>`:''}
+      </div>
+    </div>`).join('');
+  document.getElementById('users-panel').innerHTML=`
+    <button class="add-user-btn" id="add-user-btn">＋ ユーザーを追加</button>
+    <div class="tbl-wrap">
+      <div class="tbl-hdr tbl-cols-user">
+        <div>氏名 / メール</div><div>役割</div><div>ステータス</div><div>登録日</div><div>操作</div>
+      </div>
+      ${rows}
+    </div>`;
+  document.getElementById('add-user-btn').addEventListener('click',()=>openUserEdit(null));
+}
+
+window.openUserEdit = function(id){
+  editingUserId = id;
+  const u = id ? users.find(x=>x.id===id) : null;
+  document.getElementById('ud-title').textContent = u ? 'ユーザーを編集' : 'ユーザーを追加';
+  document.getElementById('ud-name').value  = u ? u.name  : '';
+  document.getElementById('ud-email').value = u ? u.email : '';
+  document.getElementById('ud-pass').value  = '';
+  document.getElementById('ud-pass').placeholder = u ? '変更する場合のみ入力' : '8文字以上';
+  document.getElementById('ud-pw-hint').textContent = u ? '空白のままにすると変更されません' : '';
+  document.getElementById('ud-role').value   = u ? u.role   : 'staff';
+  document.getElementById('ud-status').value = u ? u.status : 'active';
+  document.getElementById('ud-err').style.display='none';
+  document.getElementById('user-dialog').classList.add('open');
+};
+
+window.deleteUser = function(id){
+  if(id===currentUser.id){showToast('自分自身は削除できません');return;}
+  if(!confirm('このユーザーを削除しますか？'))return;
+  users=users.filter(u=>u.id!==id);
+  saveUsers(users);
+  renderUsers();
+  showToast('ユーザーを削除しました');
+};
+
+document.getElementById('ud-save').addEventListener('click',()=>{
+  const name  = document.getElementById('ud-name').value.trim();
+  const email = document.getElementById('ud-email').value.trim();
+  const pass  = document.getElementById('ud-pass').value;
+  const role  = document.getElementById('ud-role').value;
+  const status= document.getElementById('ud-status').value;
+  const errEl = document.getElementById('ud-err');
+  errEl.style.display='none';
+  if(!name||!email){errEl.textContent='氏名とメールアドレスは必須です';errEl.style.display='block';return;}
+  if(!editingUserId && pass.length<8){errEl.textContent='パスワードは8文字以上で入力してください';errEl.style.display='block';return;}
+  if(pass && pass.length<8){errEl.textContent='パスワードは8文字以上で入力してください';errEl.style.display='block';return;}
+  const dup=users.find(u=>u.email===email && u.id!==editingUserId);
+  if(dup){errEl.textContent='このメールアドレスはすでに使用されています';errEl.style.display='block';return;}
+  if(editingUserId){
+    const u=users.find(x=>x.id===editingUserId);
+    u.name=name; u.email=email; u.role=role; u.status=status;
+    if(pass) u.password=pass;
+    showToast('ユーザー情報を更新しました ✓');
+  } else {
+    users.push({id:Date.now(),name,email,password:pass,role,status,createdAt:fmtDkey(new Date())});
+    showToast('ユーザーを追加しました ✓');
+  }
+  saveUsers(users);
+  document.getElementById('user-dialog').classList.remove('open');
+  renderUsers();
+});
+
+document.getElementById('ud-cancel').addEventListener('click',()=>document.getElementById('user-dialog').classList.remove('open'));
+document.getElementById('user-dialog').addEventListener('click',e=>{if(e.target.id==='user-dialog')document.getElementById('user-dialog').classList.remove('open');});
+
+/* ============================================================
+   SHIFT MODAL
+============================================================ */
+function openShiftModal(sh,staffId,dk,startH,startM){
+  editing=sh||null;
+  const staffList=getStaffList();
+  const sel=document.getElementById('m-st');
+  sel.innerHTML=staffList.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(sh){
+    sel.value=sh.staffId;
+    document.getElementById('m-dt').value=sh.date;
+    document.getElementById('m-sh').value=sh.sh;
+    document.getElementById('m-sm').value=pad(sh.sm);
+    document.getElementById('m-eh').value=sh.eh;
+    document.getElementById('m-em').value=pad(sh.em);
+    document.getElementById('m-nt').value=sh.note||'';
+    selColor=sh.color;
+    document.getElementById('mtit').textContent='シフトを編集';
+    document.getElementById('m-del').style.display='block';
+  } else {
+    sel.value=staffId||staffList[0]?.id;
+    document.getElementById('m-dt').value=dk||fmtDkey(curDate);
+    document.getElementById('m-sh').value=startH??9;
+    document.getElementById('m-sm').value=pad(startM??0);
+    document.getElementById('m-eh').value=Math.min((startH??9)+8,EH);
+    document.getElementById('m-em').value='00';
+    document.getElementById('m-nt').value='';
+    selColor=staffList.find(s=>s.id===parseInt(sel.value))?.color||PALETTE[0];
+    document.getElementById('mtit').textContent='シフトを追加';
+    document.getElementById('m-del').style.display='none';
+  }
+  drawCP();
+  document.getElementById('shift-modal').classList.add('open');
+}
+
+function drawCP(){
+  document.getElementById('cprow').innerHTML=PALETTE.map(c=>
+    `<div class="cp${c===selColor?' on':''}" style="background:${c}" data-c="${c}"></div>`).join('');
+  document.querySelectorAll('.cp').forEach(el=>el.addEventListener('click',()=>{selColor=el.dataset.c;drawCP();}));
+}
+
+function saveShift(){
+  const sid=parseInt(document.getElementById('m-st').value);
+  const dk =document.getElementById('m-dt').value.trim();
+  const sh =parseInt(document.getElementById('m-sh').value);
+  const sm =parseInt(document.getElementById('m-sm').value)||0;
+  const eh =parseInt(document.getElementById('m-eh').value);
+  const em =parseInt(document.getElementById('m-em').value)||0;
+  const nt =document.getElementById('m-nt').value;
+  if(isNaN(sh)||isNaN(eh)){showToast('時刻を正しく入力してください');return;}
+  if(sh*60+sm>=eh*60+em){showToast('終了は開始より後にしてください');return;}
+  if(!dk){showToast('日付を入力してください');return;}
+  if(editing){
+    Object.assign(editing,{staffId:sid,date:dk,sh,sm,eh,em,note:nt,color:selColor});
+    showToast('シフトを更新しました ✓');
+  } else {
+    shifts.push({id:Date.now()+Math.random(),staffId:sid,date:dk,sh,sm,eh,em,note:nt,color:selColor});
+    showToast('シフトを追加しました ✓');
+  }
+  saveShifts();
+  document.getElementById('shift-modal').classList.remove('open');
+  renderCurrent();
+}
+
+function delShift(){
+  if(!editing)return;
+  shifts=shifts.filter(s=>s.id!==editing.id);
+  saveShifts();
+  document.getElementById('shift-modal').classList.remove('open');
+  showToast('シフトを削除しました');
+  renderCurrent();
+}
+
+/* ============================================================
+   FORGOT PASSWORD
+============================================================ */
+document.getElementById('goto-forgot').addEventListener('click',()=>{
+  document.getElementById('forgot-err').style.display='none';
+  document.getElementById('forgot-ok').style.display='none';
+  document.getElementById('forgot-step1').style.display='block';
+  document.getElementById('forgot-step2').style.display='none';
+  document.getElementById('forgot-email').value='';
+  document.getElementById('forgot-code-input').value='';
+  document.getElementById('forgot-newpass').value='';
+  document.getElementById('forgot-newpass2').value='';
+  showScreen('screen-forgot');
+});
+
+document.getElementById('goto-login').addEventListener('click',()=>showScreen('screen-login'));
+
+document.getElementById('forgot-send-btn').addEventListener('click',()=>{
+  const email=document.getElementById('forgot-email').value.trim();
+  const u=users.find(x=>x.email===email);
+  const errEl=document.getElementById('forgot-err');
+  const okEl=document.getElementById('forgot-ok');
+  errEl.style.display='none'; okEl.style.display='none';
+  if(!u){errEl.style.display='block';return;}
+  resetCode=String(Math.floor(100000+Math.random()*900000));
+  resetEmail=email;
+  document.getElementById('demo-code').textContent=resetCode;
+  okEl.style.display='block';
+  document.getElementById('forgot-step1').style.display='none';
+  document.getElementById('forgot-step2').style.display='block';
+});
+
+document.getElementById('forgot-reset-btn').addEventListener('click',()=>{
+  const code   =document.getElementById('forgot-code-input').value.trim();
+  const newpass=document.getElementById('forgot-newpass').value;
+  const newpass2=document.getElementById('forgot-newpass2').value;
+  const errEl=document.getElementById('forgot-step2-err');
+  errEl.style.display='none';
+  if(code!==resetCode){errEl.textContent='確認コードが正しくありません';errEl.style.display='block';return;}
+  if(newpass.length<8){errEl.textContent='パスワードは8文字以上で入力してください';errEl.style.display='block';return;}
+  if(newpass!==newpass2){errEl.textContent='パスワードが一致しません';errEl.style.display='block';return;}
+  const u=users.find(x=>x.email===resetEmail);
+  if(u) u.password=newpass;
+  saveUsers(users);
+  showToast('パスワードを変更しました。再度ログインしてください。');
+  setTimeout(()=>showScreen('screen-login'),1800);
+});
+
+/* ============================================================
+   CHANGE PASSWORD (from settings)
+============================================================ */
+document.getElementById('goto-chpw-btn').addEventListener('click',()=>{
+  document.getElementById('chpw-cur').value='';
+  document.getElementById('chpw-new').value='';
+  document.getElementById('chpw-new2').value='';
+  document.getElementById('chpw-err').style.display='none';
+  document.getElementById('chpw-ok').style.display='none';
+  showScreen('screen-chpw');
+});
+document.getElementById('chpw-back').addEventListener('click',()=>{
+  showScreen('app');
+  switchTab('set');
+});
+
+document.getElementById('chpw-btn').addEventListener('click',()=>{
+  const cur =document.getElementById('chpw-cur').value;
+  const nw  =document.getElementById('chpw-new').value;
+  const nw2 =document.getElementById('chpw-new2').value;
+  const errEl=document.getElementById('chpw-err');
+  const okEl =document.getElementById('chpw-ok');
+  errEl.style.display='none'; okEl.style.display='none';
+  const u=users.find(x=>x.id===currentUser.id);
+  if(!u||u.password!==cur){errEl.textContent='現在のパスワードが正しくありません';errEl.style.display='block';return;}
+  if(nw.length<8){errEl.textContent='新しいパスワードは8文字以上で入力してください';errEl.style.display='block';return;}
+  if(nw!==nw2){errEl.textContent='新しいパスワードが一致しません';errEl.style.display='block';return;}
+  u.password=nw;
+  currentUser=u;
+  saveUsers(users);
+  okEl.style.display='block';
+  showToast('パスワードを変更しました ✓');
+  setTimeout(()=>{showScreen('app');switchTab('set');},2000);
+});
+
+/* ============================================================
+   APP INIT / NAV
+============================================================ */
+function renderCurrent(){
+  if(tab==='day')   renderDay();
+  else if(tab==='week')  renderWeek();
+  else if(tab==='staff') renderStaff();
+  else if(tab==='req')   renderReq();
+  else if(tab==='users') renderUsers();
+}
+function updLabel(){
+  const show=['day','week'].includes(tab);
+  document.getElementById('hnav').style.display=show?'flex':'none';
+  if(tab==='day')  document.getElementById('nlbl').textContent=dispD(curDate);
+  else if(tab==='week') document.getElementById('nlbl').textContent=fmtWeek(curDate);
+}
+function switchTab(t){
+  tab=t;
+  document.querySelectorAll('.vtab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  ['day','week','staff','req','users','set'].forEach(x=>
+    document.getElementById('tab-'+x).style.display=x===t?'block':'none');
+  updLabel();
+  renderCurrent();
+}
+
+document.getElementById('login-btn').addEventListener('click',()=>{
+  users=loadUsers();
+  const email=document.getElementById('login-email').value.trim();
+  const pass =document.getElementById('login-pass').value;
+  const errEl=document.getElementById('login-err');
+  const u=users.find(x=>x.email===email&&x.password===pass&&x.status==='active');
+  if(!u){errEl.style.display='block';document.getElementById('login-pass').value='';return;}
+  errEl.style.display='none';
+  currentUser=u;
+  document.getElementById('su-email').textContent=u.email;
+  document.getElementById('su-name').textContent=u.name;
+  document.getElementById('su-role').textContent={admin:'管理者',staff:'スタッフ',viewer:'閲覧のみ'}[u.role]||u.role;
+  /* 管理者以外はユーザー管理タブを非表示 */
+  document.querySelector('[data-tab="users"]').style.display=u.role==='admin'?'':'none';
+  initShifts();
+  showScreen('app');
+  tab='day'; updLabel(); renderDay();
+});
+document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('login-btn').click();});
+
+document.querySelectorAll('.vtab').forEach(btn=>{
+  btn.addEventListener('click',()=>switchTab(btn.dataset.tab));
+});
+document.getElementById('np').addEventListener('click',()=>{
+  if(tab==='day') curDate.setDate(curDate.getDate()-1);
+  else curDate.setDate(curDate.getDate()-7);
+  curDate=new Date(curDate); updLabel(); renderCurrent();
+});
+document.getElementById('nn').addEventListener('click',()=>{
+  if(tab==='day') curDate.setDate(curDate.getDate()+1);
+  else curDate.setDate(curDate.getDate()+7);
+  curDate=new Date(curDate); updLabel(); renderCurrent();
+});
+document.getElementById('tbtn').addEventListener('click',()=>{ curDate=new Date(); updLabel(); renderCurrent(); });
+document.getElementById('abtn').addEventListener('click',()=>openShiftModal(null,null,null,9,0));
+document.getElementById('m-cl').addEventListener('click',()=>document.getElementById('shift-modal').classList.remove('open'));
+document.getElementById('shift-modal').addEventListener('click',e=>{if(e.target.id==='shift-modal')document.getElementById('shift-modal').classList.remove('open');});
+document.getElementById('m-sv').addEventListener('click',saveShift);
+document.getElementById('m-del').addEventListener('click',delShift);
+document.getElementById('lout').addEventListener('click',()=>{
+  currentUser=null;
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pass').value='';
+  showScreen('screen-login');
+});
+</script>
+</body>
+</html>
